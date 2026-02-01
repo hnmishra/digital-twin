@@ -16,7 +16,16 @@ cd terraform
 echo "🔧 Initializing Terraform backend..."
 #terraform init -input=false -reconfigure
 
-cd terraform
+TERRAFORM_DIR="$(pwd)/terraform"
+
+if [ ! -d "$TERRAFORM_DIR" ]; then
+  echo "❌ Terraform directory not found at $TERRAFORM_DIR"
+  echo "📂 Contents of project root:"
+  ls -la
+  exit 1
+fi
+
+cd "$TERRAFORM_DIR"
 
 echo "🔧 Initializing Terraform backend..."
 
