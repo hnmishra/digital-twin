@@ -42,9 +42,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install uv
+        shell: pwsh
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $env:GITHUB_PATH
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -59,41 +60,57 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Run Deployment Script
+        shell: pwsh
         run: |
           # Set environment variables for the script
-          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
-          export DEFAULT_AWS_REGION=${{ secrets.DEFAULT_AWS_REGION }}
+          $env:AWS_ACCOUNT_ID = "${{ secrets.AWS_ACCOUNT_ID }}"
+          $env:DEFAULT_AWS_REGION = "${{ secrets.DEFAULT_AWS_REGION }}"
+          $env:AWS_ROLE_ARN = "${{ secrets.AWS_ROLE_ARN }}"
 
-          # Make script executable and run it
-          chmod +x scripts/deploy.ps1
-          ./scripts/deploy.ps1 ${{ github.event.inputs.environment || 'dev' }}
-        env:
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          # Run PowerShell deployment script
+          ./scripts/deploy.ps1 "${{ github.event.inputs.environment || 'dev' }}"
 
       - name: Get Deployment URLs
         id: deploy_outputs
+        shell: pwsh
         working-directory: ./terraform
         run: |
-          terraform workspace select ${{ github.event.inputs.environment || 'dev' }}
-          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> $GITHUB_OUTPUT
-          echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
-          echo "frontend_bucket=$(terraform output -raw s3_frontend_bucket)" >> $GITHUB_OUTPUT
+          $env:ENVIRONMENT = "${{ github.event.inputs.environment || 'dev' }}"
+
+          terraform workspace select $env:ENVIRONMENT
+
+          $cloudfrontUrl = terraform output -raw cloudfront_url
+          $apiUrl = terraform output -raw api_gateway_url
+          $frontendBucket = terraform output -raw s3_frontend_bucket
+
+          echo "cloudfront_url=$cloudfrontUrl" >> $env:GITHUB_OUTPUT
+          echo "api_url=$apiUrl" >> $env:GITHUB_OUTPUT
+          echo "frontend_bucket=$frontendBucket" >> $env:GITHUB_OUTPUT
 
       - name: Invalidate CloudFront
+        shell: pwsh
         run: |
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Origins.Items[?DomainName=='${{ steps.deploy_outputs.outputs.frontend_bucket }}.s3-website-${{ secrets.DEFAULT_AWS_REGION }}.amazonaws.com']].Id | [0]" \
-            --output text)
+          $frontendBucket = "${{ steps.deploy_outputs.outputs.frontend_bucket }}"
+          $region = "${{ secrets.DEFAULT_AWS_REGION }}"
 
-          if [ "$DISTRIBUTION_ID" != "None" ] && [ -n "$DISTRIBUTION_ID" ]; then
-            aws cloudfront create-invalidation \
-              --distribution-id $DISTRIBUTION_ID \
+          # Get CloudFront distribution ID
+          $distributionId = aws cloudfront list-distributions `
+            --query "DistributionList.Items[?Origins.Items[?DomainName=='$frontendBucket.s3-website-$region.amazonaws.com']].Id | [0]" `
+            --output text
+
+          if ($distributionId -and $distributionId -ne "None") {
+            Write-Host "Invalidating CloudFront distribution: $distributionId"
+            aws cloudfront create-invalidation `
+              --distribution-id $distributionId `
               --paths "/*"
-          fi
+          } else {
+            Write-Host "No CloudFront distribution found for bucket: $frontendBucket"
+          }
 
       - name: Deployment Summary
+        shell: pwsh
         run: |
-          echo "✅ Deployment Complete!"
-          echo "🌐 CloudFront URL: ${{ steps.deploy_outputs.outputs.cloudfront_url }}"
-          echo "📡 API Gateway: ${{ steps.deploy_outputs.outputs.api_url }}"
-          echo "🪣 Frontend Bucket: ${{ steps.deploy_outputs.outputs.frontend_bucket }}"
+          Write-Host "✅ Deployment Complete!" -ForegroundColor Green
+          Write-Host "🌐 CloudFront URL: ${{ steps.deploy_outputs.outputs.cloudfront_url }}" -ForegroundColor Cyan
+          Write-Host "📡 API Gateway: ${{ steps.deploy_outputs.outputs.api_url }}" -ForegroundColor Cyan
+          Write-Host "🪣 Frontend Bucket: ${{ steps.deploy_outputs.outputs.frontend_bucket }}" -ForegroundColor Cyan
