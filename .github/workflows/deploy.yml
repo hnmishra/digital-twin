@@ -63,6 +63,9 @@ jobs:
           # Set environment variables for the script
           export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
           export DEFAULT_AWS_REGION=${{ secrets.DEFAULT_AWS_REGION }}
+          export TF_STATE_TABLE=${{ secrets.TF_STATE_TABLE }}
+          export TF_STATE_BUCKET=${{ secrets.TF_STATE_BUCKET }}
+
 
           # Make script executable and run it
           chmod +x scripts/deploy.sh
