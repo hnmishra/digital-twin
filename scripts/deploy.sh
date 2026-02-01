@@ -13,6 +13,8 @@ echo "📦 Building Lambda package..."
 # 2. Terraform workspace & apply
 cd terraform
 #terraform init -input=false
+echo "🔧 Initializing Terraform backend..."
+terraform init -input=false -reconfigure
 #
 if ! terraform workspace list | grep -q "$ENVIRONMENT"; then
   terraform workspace new "$ENVIRONMENT"
