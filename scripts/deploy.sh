@@ -2,6 +2,12 @@ set -e
 
 ENVIRONMENT=${1:-dev}          # dev | test | prod
 PROJECT_NAME=${2:-twin}
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+TERRAFORM_DIR="$ROOT_DIR/terraform"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+BACKEND_DIR="$ROOT_DIR/backend"
+
+echo "📍 Project root: $ROOT_DIR"
 
 echo "🚀 Deploying ${PROJECT_NAME} to ${ENVIRONMENT}..."
 
@@ -16,16 +22,15 @@ cd terraform
 echo "🔧 Initializing Terraform backend..."
 #terraform init -input=false -reconfigure
 
-TERRAFORM_DIR="$(pwd)/terraform"
-
 if [ ! -d "$TERRAFORM_DIR" ]; then
   echo "❌ Terraform directory not found at $TERRAFORM_DIR"
   echo "📂 Contents of project root:"
-  ls -la
+  ls -la "$ROOT_DIR"
   exit 1
 fi
 
 cd "$TERRAFORM_DIR"
+
 
 echo "🔧 Initializing Terraform backend..."
 
