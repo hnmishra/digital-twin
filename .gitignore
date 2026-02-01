@@ -1,14 +1,23 @@
 # Terraform
+**/.terraform/*
 *.tfstate
 *.tfstate.*
-.terraform/
 .terraform.lock.hcl
-terraform.tfstate.d/
-*.tfvars.secret
-
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
 # Lambda packages
 lambda-deployment.zip
 lambda-package/
+**/lambda-deployment.zip
+**/package/
+**/layer/
+*.zip
 
 # Memory storage (contains conversation history)
 memory/
