@@ -1,5 +1,5 @@
 name: Destroy Environment
-
+#check
 on:
   workflow_dispatch:
     inputs:
@@ -27,19 +27,14 @@ jobs:
 
     steps:
       - name: Verify confirmation
-        shell: pwsh
         run: |
-          $environment = "${{ github.event.inputs.environment }}"
-          $confirm = "${{ github.event.inputs.confirm }}"
-
-          if ($confirm -ne $environment) {
-            Write-Host "❌ Confirmation does not match environment name!" -ForegroundColor Red
-            Write-Host "You entered: '$confirm'" -ForegroundColor Yellow
-            Write-Host "Expected: '$environment'" -ForegroundColor Yellow
+          if [ "${{ github.event.inputs.confirm }}" != "${{ github.event.inputs.environment }}" ]; then
+            echo "❌ Confirmation does not match environment name!"
+            echo "You entered: '${{ github.event.inputs.confirm }}'"
+            echo "Expected: '${{ github.event.inputs.environment }}'"
             exit 1
-          }
-
-          Write-Host "✅ Destruction confirmed for $environment" -ForegroundColor Green
+          fi
+          echo "✅ Destruction confirmed for ${{ github.event.inputs.environment }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,17 +52,17 @@ jobs:
           terraform_wrapper: false # Important: disable wrapper to get raw outputs
 
       - name: Run Destroy Script
-        shell: pwsh
         run: |
           # Set environment variables for the script
-          $env:AWS_ACCOUNT_ID = "${{ secrets.AWS_ACCOUNT_ID }}"
-          $env:DEFAULT_AWS_REGION = "${{ secrets.DEFAULT_AWS_REGION }}"
-          $env:AWS_ROLE_ARN = "${{ secrets.AWS_ROLE_ARN }}"
+          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+          export DEFAULT_AWS_REGION=${{ secrets.DEFAULT_AWS_REGION }}
 
-          # Run PowerShell destroy script
-          ./scripts/destroy.ps1 "${{ github.event.inputs.environment }}"
+          # Make script executable and run it
+          chmod +x scripts/destroy.sh
+          ./scripts/destroy.sh ${{ github.event.inputs.environment }}
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Destruction Complete
-        shell: pwsh
         run: |
-          Write-Host "✅ Environment ${{ github.event.inputs.environment }} has been destroyed!" -ForegroundColor Green
+          echo "✅ Environment ${{ github.event.inputs.environment }} has been destroyed!"
