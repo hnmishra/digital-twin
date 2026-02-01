@@ -14,7 +14,19 @@ echo "📦 Building Lambda package..."
 cd terraform
 #terraform init -input=false
 echo "🔧 Initializing Terraform backend..."
-terraform init -input=false -reconfigure
+#terraform init -input=false -reconfigure
+
+cd terraform
+
+echo "🔧 Initializing Terraform backend..."
+
+terraform init \
+  -input=false \
+  -reconfigure \
+  -backend-config="bucket=${TF_STATE_BUCKET}" \
+  -backend-config="key=${PROJECT_NAME}/${ENVIRONMENT}/terraform.tfstate" \
+  -backend-config="region=${DEFAULT_AWS_REGION}" \
+  -backend-config="dynamodb_table=${TF_STATE_TABLE}"
 #
 if ! terraform workspace list | grep -q "$ENVIRONMENT"; then
   terraform workspace new "$ENVIRONMENT"
