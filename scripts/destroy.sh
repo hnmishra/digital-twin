@@ -36,7 +36,8 @@ terraform init \
   -input=false \
   -reconfigure \
   -backend-config="bucket=${TF_STATE_BUCKET}" \
-  -backend-config="key=${PROJECT_NAME}/${ENVIRONMENT}/terraform.tfstate" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="workspace_key_prefix=${PROJECT_NAME}" \
   -backend-config="region=${DEFAULT_AWS_REGION}" \
   -backend-config="dynamodb_table=${TF_STATE_TABLE}"
 
